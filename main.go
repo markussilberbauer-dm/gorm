@@ -52,6 +52,11 @@ func Open(dialect string, args ...interface{}) (db *DB, err error) {
 	switch value := args[0].(type) {
 	case string:
 		var driver = dialect
+
+		if driver == "oracle" {
+			driver = "godror"
+		}
+
 		if len(args) == 1 {
 			source = value
 		} else if len(args) >= 2 {
