@@ -97,7 +97,12 @@ func (s oracle) fieldCanAutoIncrement(field *StructField) bool {
 
 func (s oracle) HasIndex(tableName string, indexName string) bool {
 	var count int
-	s.db.QueryRow("SELECT count(*) FROM user_indexes WHERE INDEX_NAME=$1 AND TABLE_NAME=$2", indexName, tableName).Scan(&count)
+	row := s.db.QueryRow("SELECT count(*) FROM user_indexes WHERE INDEX_NAME=:1 AND TABLE_NAME=:2", indexName, tableName)
+	err := row.Err()
+	if err != nil {
+		fmt.Printf("Error checking if index %s exists for table %s! %s\n", indexName, tableName, err)
+	}
+	row.Scan(&count)
 	return count > 0
 }
 
@@ -168,6 +173,9 @@ func (oracle) LastInsertIDOutputInterstitial(tableName, columnName string, colum
 }
 
 func (o oracle) LastInsertIDReturningSuffix(tableName, columnName string) string {
+	if columnName == "*" {
+		return ""
+	}
 	return " RETURNING " + columnName + " INTO :id"
 }
 

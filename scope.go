@@ -813,7 +813,7 @@ func (scope *Scope) orderSQL() string {
 			orders = append(orders, exp)
 		}
 	}
-	return " ORDER BY " + strings.Join(orders, ",")
+	return " ORDER BY " + strings.Join(orders, ", ")
 }
 
 func (scope *Scope) limitAndOffsetSQL() string {

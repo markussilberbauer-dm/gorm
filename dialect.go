@@ -140,9 +140,12 @@ var ParseFieldStructForDialect = func(field *StructField, dialect Dialect) (fiel
 		}
 	} else {
 		if value, ok := field.TagSettings["DEFAULT"]; ok {
-			additionalType += " DEFAULT " + value
+			additionalType += " DEFAULT " + value + " "
 		}
-		additionalType += field.TagSettings["NOT NULL"] + " " + field.TagSettings["UNIQUE"]
+		if dialect.GetName() != "oracle" {
+			additionalType += field.TagSettings["NOT NULL"] + " "
+		}
+		additionalType += field.TagSettings["UNIQUE"]
 	}
 
 	return fieldValue, dataType, size, strings.TrimSpace(additionalType)

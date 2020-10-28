@@ -126,6 +126,28 @@ func (e *expr) operator(operator string, value interface{}) *expr {
 	return e
 }
 
+func (e *expr) Coalesce(values ...interface{}) *expr {
+	if len(values) == 0 {
+		return e
+	}
+
+	e.expr = "COALESCE(" + e.expr
+
+	for _, value := range values {
+		if vExpr, ok := value.(*expr); ok {
+			e.expr += ", " + vExpr.expr
+			e.args = append(e.args, vExpr.args...)
+		} else {
+			e.expr += ", ?"
+			e.args = append(e.args, value)
+		}
+	}
+
+	e.expr += ")"
+
+	return e
+}
+
 // Union will create a statement which unions the statement of e and stmt
 func (e *expr) Union(stmt *expr) *expr {
 	e.expr = e.expr + " UNION " + stmt.expr
@@ -311,12 +333,16 @@ func (e *expr) NotIn(values ...interface{}) *expr {
 	return e.in(" NOT", values...)
 }
 
-func (e *expr) OrderAsc() string {
-	return e.expr + " ASC "
+func (e *expr) OrderAsc() *expr {
+	e.expr += " ASC "
+
+	return e
 }
 
-func (e *expr) OrderDesc() string {
-	return e.expr + " DESC "
+func (e *expr) OrderDesc() *expr {
+	e.expr += " DESC "
+
+	return e
 }
 
 func (e *expr) Or(e2 *expr) *expr {
