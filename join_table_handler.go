@@ -127,15 +127,28 @@ func (s JoinTableHandler) Add(handler JoinTableHandlerInterface, db *DB, source 
 	}
 
 	quotedTable := scope.Quote(handler.Table(db))
-	sql := fmt.Sprintf(
-		"INSERT INTO %v (%v) SELECT %v %v WHERE NOT EXISTS (SELECT * FROM %v WHERE %v)",
-		quotedTable,
-		strings.Join(assignColumns, ","),
-		strings.Join(binVars, ","),
-		scope.Dialect().SelectFromDummyTable(),
-		quotedTable,
-		strings.Join(conditions, " AND "),
-	)
+	var sql string
+	if scope.Dialect().GetName() == "oracle" {
+		sql = fmt.Sprintf(
+			"INSERT INTO %v (%v) SELECT %v %v from dual WHERE NOT EXISTS (SELECT * FROM %v WHERE %v)",
+			quotedTable,
+			strings.Join(assignColumns, ","),
+			strings.Join(binVars, ","),
+			scope.Dialect().SelectFromDummyTable(),
+			quotedTable,
+			strings.Join(conditions, " AND "),
+		)
+	} else {
+		sql = fmt.Sprintf(
+			"INSERT INTO %v (%v) SELECT %v %v WHERE NOT EXISTS (SELECT * FROM %v WHERE %v)",
+			quotedTable,
+			strings.Join(assignColumns, ","),
+			strings.Join(binVars, ","),
+			scope.Dialect().SelectFromDummyTable(),
+			quotedTable,
+			strings.Join(conditions, " AND "),
+		)
+	}
 
 	return db.Exec(sql, values...).Error
 }

@@ -1,6 +1,7 @@
 package gorm
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 )
@@ -129,9 +130,25 @@ func createCallback(scope *Scope) {
 			}
 		} else {
 			if primaryField.Field.CanAddr() {
-				if err := scope.SQLDB().QueryRow(scope.SQL, scope.SQLVars...).Scan(primaryField.Field.Addr().Interface()); scope.Err(err) == nil {
-					primaryField.IsBlank = false
-					scope.db.RowsAffected = 1
+				if scope.Dialect().GetName() == "oracle" {
+					var id uint64
+					out := sql.Named("id", sql.Out{
+						Dest: &id,
+					})
+					scope.SQLVars = append(scope.SQLVars, out)
+					_, err := scope.SQLDB().Exec(scope.SQL, scope.SQLVars...)
+					if err == nil {
+						primaryField.Field.SetUint(id)
+						primaryField.IsBlank = false
+						scope.db.RowsAffected = 1
+					} else {
+						scope.Err(err)
+					}
+				} else {
+					if err := scope.SQLDB().QueryRow(scope.SQL, scope.SQLVars...).Scan(primaryField.Field.Addr().Interface()); scope.Err(err) == nil {
+						primaryField.IsBlank = false
+						scope.db.RowsAffected = 1
+					}
 				}
 			} else {
 				scope.Err(ErrUnaddressable)

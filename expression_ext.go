@@ -13,13 +13,13 @@ type jexpr struct {
 func join(joinType string, db *DB, model interface{}, alias ...string) *jexpr {
 	var al string
 	if len(alias) > 0 {
-		al = alias[0]
+		al = db.Dialect().Quote(alias[0])
 	}
 
 	if val, ok := model.(*expr); ok {
 		return &jexpr{expr: " " + joinType + " JOIN (" + val.expr + ") " + al, args: val.args}
 	}
-	return &jexpr{expr: " " + joinType + " JOIN " + db.T(model) + " " + al}
+	return &jexpr{expr: " " + joinType + " JOIN " + db.QT(model) + " " + al}
 }
 
 func (db *DB) InnerJoin(model interface{}, alias ...string) *jexpr {
@@ -60,33 +60,40 @@ func (db *DB) LA(model interface{}, alias string, name string) *expr {
 	return &expr{expr: scope.Quote(alias) + "." + scope.Quote(field.DBName)}
 }
 
+// C returns all column names of the specified model as a string, where the
+// columns are separated by ", ".
+// The column names are not quoted and specified without table name
+// You shouldn't use this method, but CQ.
 func (db *DB) C(model interface{}, names ...string) string {
-	columns := make([]string, 0)
+	columns := make([]string, len(names))
 
 	scope := db.NewScope(model)
-	for _, name := range names {
+	for idx, name := range names {
 		field, _ := scope.FieldByName(name)
-		columns = append(columns, field.DBName)
+		columns[idx] = field.DBName
 	}
 
 	return strings.Join(columns, ", ")
 }
 
 func (db *DB) CA(model interface{}, alias string, names ...string) string {
-	columns := make([]string, 0)
+	columns := make([]string, len(names))
 
-	for _, name := range names {
-		columns = append(columns, db.LA(model, alias, name).expr)
+	for idx, name := range names {
+		columns[idx] = db.LA(model, alias, name).expr
 	}
 
 	return strings.Join(columns, ", ")
 }
 
+// CQ returns all column names of the specified model as a string, where
+// the columns are separated by ", ".
+// The column names are quoted and are specified with the table name.
 func (db *DB) CQ(model interface{}, names ...string) string {
-	columns := make([]string, 0)
+	columns := make([]string, len(names))
 
-	for _, name := range names {
-		columns = append(columns, db.L(model, name).expr)
+	for idx, name := range names {
+		columns[idx] = db.L(model, name).expr
 	}
 
 	return strings.Join(columns, ", ")

@@ -158,3 +158,7 @@ func (postgres) FormatDate(e *expr, format string) *expr {
 	e.expr = "(to_char(" + e.expr + ", '" + parsedFormat + "'))"
 	return e
 }
+
+func (postgres) ColumnDefinitionNullFirst() bool {
+	return true
+}

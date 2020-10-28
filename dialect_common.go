@@ -132,6 +132,11 @@ func (s commonDialect) ModifyColumn(tableName string, columnName string, typ str
 	return err
 }
 
+func (s commonDialect) RenameColumn(tableName string, columnName string, newColumName string) error {
+	_, err := s.db.Exec(fmt.Sprintf("ALTER TABLE %v CHANGE COLUMN %v TO %v", tableName, columnName, newColumName))
+	return err
+}
+
 func (s commonDialect) CurrentDatabase() (name string) {
 	s.db.QueryRow("SELECT DATABASE()").Scan(&name)
 	return
@@ -177,4 +182,12 @@ func IsByteArrayOrSlice(value reflect.Value) bool {
 
 func (commonDialect) FormatDate(e *expr, format string) *expr {
 	return e
+}
+
+func (commonDialect) ColumnDefinitionNullFirst() bool {
+	return true
+}
+
+func (commonDialect) ConvertSQLVar(value interface{}) interface{} {
+	return value
 }

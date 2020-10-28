@@ -35,6 +35,8 @@ type Dialect interface {
 	HasColumn(tableName string, columnName string) bool
 	// ModifyColumn modify column's type
 	ModifyColumn(tableName string, columnName string, typ string) error
+	// RenameColumn rename column's name
+	RenameColumn(tableName string, columnName string, newColumnName string) error
 
 	// LimitAndOffsetSQL return generated SQL with Limit and Offset, as mssql has special case
 	LimitAndOffsetSQL(limit, offset interface{}) string
@@ -63,6 +65,11 @@ type Dialect interface {
 	// | MINUTE      | %m   | %M (00-59)        | %i (00-59)        | mm (00-59)       | MI (00-59)       |
 	// | SECOND      | %s   | %S (00-59)        | %S (00-59)        | ss (00-59)       | SS (00-59)       |
 	FormatDate(*expr, string) *expr
+
+	// Specifies if "null/not null" should come before "default value" in column definition.
+	ColumnDefinitionNullFirst() bool
+
+	ConvertSQLVar(interface{}) interface{}
 }
 
 var dialectsMap = map[string]Dialect{}
@@ -126,9 +133,16 @@ var ParseFieldStructForDialect = func(field *StructField, dialect Dialect) (fiel
 	}
 
 	// Default type from tag setting
-	additionalType = field.TagSettings["NOT NULL"] + " " + field.TagSettings["UNIQUE"]
-	if value, ok := field.TagSettings["DEFAULT"]; ok {
-		additionalType = additionalType + " DEFAULT " + value
+	if dialect.ColumnDefinitionNullFirst() {
+		additionalType = field.TagSettings["NOT NULL"] + " " + field.TagSettings["UNIQUE"]
+		if value, ok := field.TagSettings["DEFAULT"]; ok {
+			additionalType = additionalType + " DEFAULT " + value
+		}
+	} else {
+		if value, ok := field.TagSettings["DEFAULT"]; ok {
+			additionalType += " DEFAULT " + value
+		}
+		additionalType += field.TagSettings["NOT NULL"] + " " + field.TagSettings["UNIQUE"]
 	}
 
 	return fieldValue, dataType, size, strings.TrimSpace(additionalType)

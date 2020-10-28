@@ -270,6 +270,7 @@ func (scope *Scope) AddToVars(value interface{}) string {
 		return exp
 	}
 
+	value = scope.Dialect().ConvertSQLVar(value)
 	scope.SQLVars = append(scope.SQLVars, value)
 
 	if skipBindVar {
@@ -466,8 +467,8 @@ func (scope *Scope) callMethod(methodName string, reflectValue reflect.Value) {
 }
 
 var (
-	columnRegexp        = regexp.MustCompile("^[a-zA-Z\\d]+(\\.[a-zA-Z\\d]+)*$") // only match string like `name`, `users.name`
-	isNumberRegexp      = regexp.MustCompile("^\\s*\\d+\\s*$")                   // match if string is number
+	columnRegexp        = regexp.MustCompile("^[a-zA-Z\\d_]+(\\.[a-zA-Z\\d_]+)*$") // only match string like `name`, `users.name`
+	isNumberRegexp      = regexp.MustCompile("^\\s*\\d+\\s*$")                     // match if string is number
 	comparisonRegexp    = regexp.MustCompile("(?i) (=|<>|(>|<)(=?)|LIKE|IS|IN) ")
 	countingQueryRegexp = regexp.MustCompile("(?i)^count(.+)$")
 )
@@ -1202,6 +1203,10 @@ func (scope *Scope) modifyColumn(column string, typ string) {
 	scope.db.AddError(scope.Dialect().ModifyColumn(scope.QuotedTableName(), scope.Quote(column), typ))
 }
 
+func (scope *Scope) renameColumn(column string, newColumn string) {
+	scope.db.AddError(scope.Dialect().RenameColumn(scope.QuotedTableName(), scope.Quote(column), scope.Quote(newColumn)))
+}
+
 func (scope *Scope) dropColumn(column string) {
 	scope.Raw(fmt.Sprintf("ALTER TABLE %v DROP COLUMN %v", scope.QuotedTableName(), scope.Quote(column))).Exec()
 }
@@ -1221,7 +1226,7 @@ func (scope *Scope) addIndex(unique bool, indexName string, column ...string) {
 		sqlCreate = "CREATE UNIQUE INDEX"
 	}
 
-	scope.Raw(fmt.Sprintf("%s %v ON %v(%v) %v", sqlCreate, indexName, scope.QuotedTableName(), strings.Join(columns, ", "), scope.whereSQL())).Exec()
+	scope.Raw(fmt.Sprintf("%s %v ON %v(%v) %v", sqlCreate, scope.Dialect().Quote(indexName), scope.QuotedTableName(), strings.Join(columns, ", "), scope.whereSQL())).Exec()
 }
 
 func (scope *Scope) addForeignKey(field string, dest string, onDelete string, onUpdate string) {
@@ -1260,7 +1265,7 @@ func (scope *Scope) autoMigrate() *Scope {
 			if !scope.Dialect().HasColumn(tableName, field.DBName) {
 				if field.IsNormal {
 					sqlTag := scope.Dialect().DataTypeOf(field)
-					scope.Raw(fmt.Sprintf("ALTER TABLE %v ADD %v %v;", quotedTableName, scope.Quote(field.DBName), sqlTag)).Exec()
+					scope.Raw(fmt.Sprintf("ALTER TABLE %v ADD %v %v", quotedTableName, scope.Quote(field.DBName), sqlTag)).Exec()
 				}
 			}
 			scope.createJoinTable(field)

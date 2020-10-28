@@ -137,6 +137,11 @@ func (s mysql) ModifyColumn(tableName string, columnName string, typ string) err
 	return err
 }
 
+func (s mysql) RenameColumn(tableName string, columnName string, newColumName string) error {
+	_, err := s.db.Exec(fmt.Sprintf("ALTER TABLE %v CHANGE COLUMN %v TO %v", tableName, columnName, newColumName))
+	return err
+}
+
 func (s mysql) LimitAndOffsetSQL(limit, offset interface{}) (sql string) {
 	if limit != nil {
 		if parsedLimit, err := strconv.ParseInt(fmt.Sprint(limit), 0, 0); err == nil && parsedLimit >= 0 {
@@ -205,4 +210,12 @@ func (mysql) FormatDate(e *expr, format string) *expr {
 
 	e.expr = "(DATE_FORMAT(" + e.expr + ", '" + parsedFormat + "'))"
 	return e
+}
+
+func (mysql) ColumnDefinitionNullFirst() bool {
+	return true
+}
+
+func (mysql) ConvertSQLVar(value interface{}) interface{} {
+	return value
 }

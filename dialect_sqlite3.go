@@ -122,3 +122,7 @@ func (sqlite3) FormatDate(e *expr, format string) *expr {
 	e.expr = "(strftime('" + parsedFormat + "', " + e.expr + "))"
 	return e
 }
+
+func (sqlite3) ColumnDefinitionNullFirst() bool {
+	return true
+}

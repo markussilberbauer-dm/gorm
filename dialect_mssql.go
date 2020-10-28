@@ -149,6 +149,11 @@ func (s mssql) ModifyColumn(tableName string, columnName string, typ string) err
 	return err
 }
 
+func (s mssql) RenameColumn(tableName string, columnName string, newColumName string) error {
+	_, err := s.db.Exec(fmt.Sprintf("EXEC sp_RENAME %v.%v, %v, 'COLUMN'", tableName, columnName, newColumName))
+	return err
+}
+
 func (s mssql) CurrentDatabase() (name string) {
 	s.db.QueryRow("SELECT DB_NAME() AS [Current Database]").Scan(&name)
 	return
@@ -206,4 +211,12 @@ func (mssql) FormatDate(e *expr, format string) *expr {
 
 	e.expr = "(format(" + e.expr + ", '" + parsedFormat + "'))"
 	return e
+}
+
+func (mssql) ColumnDefinitionNullFirst() bool {
+	return true
+}
+
+func (mssql) ConvertSQLVar(value interface{}) interface{} {
+	return value
 }

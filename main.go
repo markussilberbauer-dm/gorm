@@ -605,6 +605,13 @@ func (s *DB) ModifyColumn(column string, typ string) *DB {
 	return scope.db
 }
 
+// RenameColumn modify column to type
+func (s *DB) RenameColumn(column string, newColumn string) *DB {
+	scope := s.NewScope(s.Value)
+	scope.renameColumn(column, newColumn)
+	return scope.db
+}
+
 // DropColumn drop a column
 func (s *DB) DropColumn(column string) *DB {
 	scope := s.NewScope(s.Value)
