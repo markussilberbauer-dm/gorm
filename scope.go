@@ -997,7 +997,7 @@ func (scope *Scope) pluck(column string, value interface{}) *Scope {
 	}
 
 	if query, ok := scope.Search.selects["query"]; !ok || !scope.isQueryForColumn(query, column) {
-		scope.Search.Select(scope.Quote(column))
+		scope.Search.Select(column)
 	}
 
 	rows, err := scope.rows()
