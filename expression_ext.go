@@ -383,6 +383,32 @@ func (e *expr) NotIn(values ...interface{}) *expr {
 	return e.in(" NOT", values...)
 }
 
+func (e *expr) orderByCase(orderValues []interface{}) *expr {
+	e.expr = "( CASE " + e.expr
+
+	for i, orderValue := range orderValues {
+		e.expr += fmt.Sprintf(" WHEN %d THEN %d ELSE %d", orderValue, i+1, i+2)
+	}
+
+	e.expr += " END )"
+
+	return e
+}
+
+func (e *expr) OrderByCaseASC(orderValues ...interface{}) *expr {
+	e = e.orderByCase(orderValues)
+	e.expr += " ASC"
+
+	return e
+}
+
+func (e *expr) OrderByCaseDESC(orderValues ...interface{}) *expr {
+	e = e.orderByCase(orderValues)
+	e.expr += " DESC"
+
+	return e
+}
+
 func (e *expr) OrderAsc() string {
 	return e.expr + " ASC "
 }
